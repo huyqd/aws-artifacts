@@ -1,10 +1,10 @@
 {#
   Drops the table of every model in this project:
-    uv run dbt run-operation drop_models --profiles-dir .
+    dbt run-operation drop_models --profiles-dir .
   Add `--args '{dry_run: true}'` to only print what would be dropped.
 
   Plain DROP TABLE with a commit after each one, because DuckDB-Iceberg rejects CASCADE and
-  mixing drops into one transaction (see table_no_rename.sql).
+  mixing drops into one transaction.
 #}
 {% macro drop_models(dry_run=false) %}
   {% for node in graph.nodes.values() if node.resource_type == 'model' %}

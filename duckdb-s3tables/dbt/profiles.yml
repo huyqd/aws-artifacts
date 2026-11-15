@@ -1,8 +1,5 @@
-# Run dbt from this directory:  uv run dbt build --profiles-dir .
-#
-# target "dev"   -> S3 Tables via Iceberg REST. Set S3T_WAREHOUSE (and S3T_ENDPOINT_TYPE):
-#     A (default)  S3T_WAREHOUSE = table bucket ARN,                      S3T_ENDPOINT_TYPE = s3_tables
-#     C            S3T_WAREHOUSE = <acct>:s3tablescatalog/<bucket-name>,  S3T_ENDPOINT_TYPE = glue
+# Run dbt from this directory:  dbt build --profiles-dir .
+# The Iceberg catalog itself (endpoint, bucket) is in catalogs.yml.
 duckdb_s3tables:
   target: dev
   outputs:
@@ -10,18 +7,12 @@ duckdb_s3tables:
       type: duckdb
       path: ":memory:"
       threads: 1
-      settings:
-        extension_directories: ["../.duckdb/extensions"]
       extensions:
+        - iceberg
         - aws
         - httpfs
-        - iceberg
       secrets:
         - type: s3
+          name: s3_tables_secret
           provider: credential_chain
-      attach:
-        - path: "{{ env_var('S3T_WAREHOUSE') }}"
-          alias: s3_tables
-          type: iceberg
-          options:
-            endpoint_type: "{{ env_var('S3T_ENDPOINT_TYPE', 's3_tables') }}"
+          region: "{{ env_var('AWS_REGION', 'eu-central-1') }}"

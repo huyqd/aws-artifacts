@@ -1,0 +1,20 @@
+# One catalog, two ways to reach the same table bucket. Pick with S3T_CATALOG_API:
+#   s3tables (default)  warehouse = table bucket ARN
+#   glue                warehouse = <account-id>:s3tablescatalog/<bucket-name>
+# Both use the explicit endpoint + SigV4 form, which is what the dbt docs recommend for writes.
+catalogs:
+  - name: s3_tables_catalog
+    type: iceberg_rest
+    table_format: iceberg
+    config:
+      duckdb:
+        endpoint: "https://{{ env_var('S3T_CATALOG_API', 's3tables') }}.{{ env_var('AWS_REGION', 'eu-central-1') }}.amazonaws.com/iceberg"
+        warehouse: "{{ env_var('S3T_WAREHOUSE') }}"
+        authorization_type: SIGV4
+        secret: s3_tables_secret
+        default_schema: "{{ env_var('S3T_NAMESPACE', 'duckdb') }}"
+        # Neither endpoint supports staged CREATE TABLE AS or multi-table commits,
+        # and S3 Tables only allows DROP TABLE with purge.
+        stage_create_tables: false
+        disable_multi_table_commit: true
+        purge_requested: true

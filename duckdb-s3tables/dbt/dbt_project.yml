@@ -5,10 +5,13 @@ profile: duckdb_s3tables
 
 model-paths: ["models"]
 
+flags:
+  use_catalogs_v2: true
+
 models:
   duckdb_s3tables:
     +materialized: table
-    # Write into the attached S3 Tables catalog, not the local in-memory database
-    +database: s3_tables
+    # Write into the Iceberg catalog defined in catalogs.yml
+    +catalog_name: s3_tables_catalog
     # Namespace created by tofu (the "schema" inside the S3 Tables catalog)
     +schema: "{{ env_var('S3T_NAMESPACE', 'duckdb') }}"

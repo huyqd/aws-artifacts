@@ -24,10 +24,13 @@ fi
 duckdb -init duckdb-init.sql -c "$SETUP
 SHOW ALL TABLES;
 
-CREATE OR REPLACE TABLE s3_tables.${NS}.services AS
+DROP TABLE IF EXISTS s3_tables.${NS}.services_per_month;
+DROP TABLE IF EXISTS s3_tables.${NS}.services;
+
+CREATE TABLE s3_tables.${NS}.services AS
   FROM 'https://blobs.duckdb.org/nl-railway/services-2025-03.csv.gz';
 
-CREATE OR REPLACE TABLE s3_tables.${NS}.services_per_month AS
+CREATE TABLE s3_tables.${NS}.services_per_month AS
   SELECT month(\"Service:Date\") AS month,
          \"Stop:Station name\" AS station,
          count(*) AS num_services

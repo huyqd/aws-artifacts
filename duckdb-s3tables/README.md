@@ -88,8 +88,20 @@ ATTACH 'arn:aws:s3tables:eu-central-1:123456789012:bucket/duckdb-s3tables-demo' 
 );
 ```
 
-AWS doesn't support staged table creation on this endpoint, so `CREATE TABLE ... AS SELECT` may be
-rejected. If it is, add `STAGE_CREATE_TABLES false` to the `ATTACH` options (untested).
+This endpoint rejects the default way DuckDB creates tables. For writes, add two options (tested):
+`STAGE_CREATE_TABLES false` (no staged `CREATE TABLE AS`) and `DISABLE_MULTI_TABLE_COMMIT true`
+(no multi-table commit endpoint). Without the first, `CREATE TABLE ... AS` fails with a 400; with only
+the first, the commit fails with a 404. Reads work without them.
+
+```sql
+ATTACH 'arn:aws:s3tables:eu-central-1:123456789012:bucket/duckdb-s3tables-demo' AS s3_tables (
+    TYPE iceberg,
+    URI 'https://s3tables.eu-central-1.amazonaws.com/iceberg',
+    AUTHORIZATION_TYPE 'sigv4',
+    STAGE_CREATE_TABLES false,
+    DISABLE_MULTI_TABLE_COMMIT true
+);
+```
 
 ### Option C: Glue Data Catalog (Glue Iceberg REST endpoint)
 
@@ -114,9 +126,10 @@ ATTACH '123456789012:s3tablescatalog/duckdb-s3tables-demo' AS s3_tables (
 ```
 
 Notes for C:
-- **Lowercase only.** Tables and columns with capital letters are invisible through Glue. The demo's
-  `"Service:Date"` columns would hide the tables from C, so in step 5 alias them to lowercase names,
-  as shown there.
+- **Lowercase names:** AWS documents that tables or columns with capital letters are not supported by
+  Glue and Lake Formation, and don't show up in Athena. DuckDB through Glue still lists and reads
+  the demo's tables with capitalized columns (tested), so step 5 works unchanged. Use lowercase names
+  anyway if Athena or Lake Formation will read the tables.
 - `s3tablescatalog` is one per account and region and covers every table bucket in it. If it
   already exists, `tofu apply` fails: set `-var enable_glue_integration=false`, or import it with
   `tofu import 'aws_glue_catalog.s3tables[0]' s3tablescatalog` (import ID not verified).
@@ -135,8 +148,6 @@ Notes for C:
 - The IAM mode used here needs no Lake Formation grants. If you switch the integration to Lake
   Formation mode, you also need grants on the database and tables, and **Allow external engines to
   access data in Amazon S3 locations with full table access** in *Application integration settings*.
-
-> Only the `ATTACH` syntax was checked against DuckDB; B and C haven't been run against a real account.
 
 ## 4. Check the connection
 
@@ -160,19 +171,7 @@ CREATE TABLE s3_tables.duckdb.services_per_month AS
     GROUP BY ALL;
 ```
 
-Option C needs lowercase column names. Use this version of the first table instead:
-
-```sql
-CREATE TABLE s3_tables.duckdb.services AS
-    SELECT "Service:Date" AS service_date,
-           "Stop:Station name" AS station
-    FROM 'https://blobs.duckdb.org/nl-railway/services-2025-03.csv.gz';
-
-CREATE TABLE s3_tables.duckdb.services_per_month AS
-    SELECT month(service_date) AS month, station, count(*) AS num_services
-    FROM s3_tables.duckdb.services
-    GROUP BY ALL;
-```
+If the tables already exist, drop them first (step 7); DuckDB-Iceberg has no `CREATE OR REPLACE`.
 
 ## 6. Query
 
@@ -209,7 +208,7 @@ tofu destroy
 
 ## Using dbt instead
 
-To build the same tables as dbt models, see [dbt/README.md](dbt/README.md).
+To build the same tables as dbt models (dbt 2), see [dbt/README.md](dbt/README.md).
 
 ## Run everything at once
 
