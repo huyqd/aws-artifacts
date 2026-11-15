@@ -32,4 +32,6 @@ uv run dbt run   --profiles-dir . -s services_per_month   # one model
 
 `S3T_NAMESPACE` (default `duckdb`) must match the `namespace` variable in tofu.
 
-A custom `table` materialization (`macros/table_no_rename.sql`) drops and recreates each table instead of renaming, because the Iceberg REST catalog rejects a rename mixed with table updates in one transaction.
+A custom `table` materialization (`macros/table_no_rename.sql`) drops each table, commits, then recreates it.
+The stock one renames, and DuckDB-Iceberg rejects `CREATE OR REPLACE`, `DROP ... CASCADE`, and a rename
+or a drop mixed with table updates in one transaction. A table is briefly missing during a rebuild.
