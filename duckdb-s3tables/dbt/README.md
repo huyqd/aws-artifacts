@@ -32,6 +32,18 @@ uv run dbt run   --profiles-dir . -s services_per_month   # one model
 
 `S3T_NAMESPACE` (default `duckdb`) must match the `namespace` variable in tofu.
 
+## Delete the tables
+
+dbt has no drop command (`dbt clean` only removes local folders). This project has a macro
+that drops the table of every model:
+
+```bash
+uv run dbt run-operation drop_models --args '{dry_run: true}' --profiles-dir .   # preview
+uv run dbt run-operation drop_models --profiles-dir .                            # drop
+```
+
+Run it before `tofu destroy`.
+
 A custom `table` materialization (`macros/table_no_rename.sql`) drops each table, commits, then recreates it.
 The stock one renames, and DuckDB-Iceberg rejects `CREATE OR REPLACE`, `DROP ... CASCADE`, and a rename
 or a drop mixed with table updates in one transaction. A table is briefly missing during a rebuild.
