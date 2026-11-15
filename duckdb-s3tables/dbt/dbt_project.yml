@@ -1,0 +1,14 @@
+name: duckdb_s3tables
+version: "0.1.0"
+config-version: 2
+profile: duckdb_s3tables
+
+model-paths: ["models"]
+
+models:
+  duckdb_s3tables:
+    +materialized: table
+    # Write into the attached S3 Tables catalog, not the local in-memory database
+    +database: s3_tables
+    # Namespace created by tofu (the "schema" inside the S3 Tables catalog)
+    +schema: "{{ env_var('S3T_NAMESPACE', 'duckdb') }}"

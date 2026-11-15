@@ -207,6 +207,10 @@ tofu state rm 'aws_glue_catalog.s3tables[0]'   # only if you want to keep the ca
 tofu destroy
 ```
 
+## Using dbt instead
+
+To build the same tables as dbt models, see [dbt/README.md](dbt/README.md).
+
 ## Run everything at once
 
 `./run_duckdb.sh` runs steps 2 to 6 with option A (reads ARN and region from `tofu output`).

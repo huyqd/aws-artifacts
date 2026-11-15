@@ -1,0 +1,11 @@
+version: 2
+models:
+  - name: services
+    description: Raw NL railway services (March 2025)
+  - name: services_per_month
+    description: Services per station and month
+    columns:
+      - name: station
+        data_tests: [not_null]
+      - name: num_services
+        data_tests: [not_null]
